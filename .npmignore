@@ -6,3 +6,4 @@ backlog
 src
 jest.config.js
 tsconfig.json
+types.js

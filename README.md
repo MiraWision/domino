@@ -1,164 +1,248 @@
-# Domino
+# @mirawision/domino
 
-A lightweight DOM utilities library for Chrome Extension content scripts, focusing on waiting for elements, observing DOM changes, and modifying existing elements with a clean, performant API.
+A lightweight DOM utilities library for Chrome Extension content scripts, `@mirawision/domino` provides a comprehensive set of tools for waiting for elements, observing DOM changes, and modifying existing elements with a clean, performant API.
+
+[Demo and advanced Documentation can be found here!](https://mirawision.github.io/domino)
 
 ## Features
 
-- 🔍 Wait for elements to appear, disappear, or change
-- 👀 Observe DOM mutations with built-in filtering
-- 🛠 Modify elements with simple, safe utilities
-- ⚡️ Optimized for Chrome Extension content scripts
-- 📦 Tiny footprint with zero dependencies
-- 🔒 TypeScript support with full type definitions
+### Wait Utilities
+- **Element Waiting**: Wait for elements to appear, disappear, or change in the DOM
+- **Flexible Targeting**: Match elements by selector, reference, or custom predicate
+- **Timeout Control**: Built-in timeout handling with customizable durations
+- **Cancellation Support**: Abort operations using standard AbortController
+
+### Observer Utilities
+- **DOM Mutation Tracking**: Watch for element additions, removals, and modifications
+- **Filtered Observation**: Built-in filtering for specific mutation types
+- **Performance Controls**: Debounce and throttle support for callbacks
+- **Resource Management**: Automatic cleanup and memory management
+
+### Element Utilities
+- **Class Management**: Add and remove CSS classes with a clean API
+- **Attribute Handling**: Set, update, and remove element attributes
+- **Content Updates**: Safe text and HTML content manipulation
+- **Sanitization Support**: Optional HTML content sanitization
+
+### Key Benefits
+- **Chrome Extension Ready**: Optimized for content script environments
+- **Zero Dependencies**: Tiny footprint for fast loading
+- **TypeScript Support**: Full type definitions included
+- **Memory Efficient**: Automatic resource cleanup
 
 ## Installation
 
 ```bash
-npm install domino
+npm install @mirawision/domino
+```
+
+or
+
+```bash
+yarn add @mirawision/domino
 ```
 
 ## Usage
 
-### Wait Utilities
+Here's a quick overview of how to use some of the core functionalities of @mirawision/domino:
+
+### Wait for Elements
 
 ```typescript
-import { waitFor, waitForRemoved, waitForChange } from 'domino';
+import { waitFor, waitForRemoved } from '@mirawision/domino';
 
 // Wait for element to appear
-const element = await waitFor('.my-selector');
+const element = await waitFor('.my-selector', {
+  timeout: 5000,  // 5 seconds timeout
+  subtree: true   // search in descendants
+});
 
 // Wait for element to be removed
 await waitForRemoved('.my-selector');
 
-// Wait for specific change
-const changes = await waitForChange('.my-selector', 
-  records => records.some(r => r.type === 'attributes')
-);
+// Wait with abort signal
+const controller = new AbortController();
+const element = await waitFor('.my-selector', {
+  signal: controller.signal
+});
+
+// Later: abort the wait
+controller.abort();
 ```
 
-### Observer Utilities
+### Observe DOM Changes
 
 ```typescript
-import { watchAdded, watchRemoved, watchModified, watchSelector } from 'domino';
+import { watchSelector } from '@mirawision/domino';
 
-// Watch for added elements
-const dispose = watchAdded('.my-selector', element => {
-  console.log('Element added:', element);
+// Watch for all types of changes
+const dispose = watchSelector('.my-selector', {
+  onEnter: element => {
+    console.log('Element added:', element);
+  },
+  onExit: element => {
+    console.log('Element removed:', element);
+  },
+  onChange: (element, change) => {
+    if (change.attrs) {
+      console.log('Attributes changed:', Array.from(change.attrs));
+    }
+    if (change.text) {
+      console.log('Text content changed');
+    }
+  }
+}, {
+  debounce: 100,  // debounce callbacks
+  attributes: ['class', 'data-status']  // watch specific attributes
 });
 
-// Watch for removed elements
-watchRemoved('.my-selector', element => {
-  console.log('Element removed:', element);
-});
-
-// Watch for modifications
-watchModified('.my-selector', (element, change) => {
-  if (change.attrs) console.log('Attributes changed:', change.attrs);
-  if (change.text) console.log('Text changed');
-  if (change.childList) console.log('Children changed');
-});
-
-// Combined observer
-watchSelector('.my-selector', {
-  onEnter: element => console.log('Added:', element),
-  onExit: element => console.log('Removed:', element),
-  onChange: (element, change) => console.log('Changed:', change)
-});
+// Later: stop observing
+dispose();
 ```
 
-### Element Utilities
+### Modify Elements
 
 ```typescript
-import { setClasses, setAttributes, setText, setHTML } from 'domino';
+import { setClasses, setAttributes, setText, setHTML } from '@mirawision/domino';
 
-// Modify classes
+// Manage CSS classes
 setClasses(element, {
-  add: ['class-1', 'class-2'],
-  remove: ['old-class']
+  add: ['active', 'visible'],
+  remove: ['hidden', 'disabled']
 });
 
-// Set/remove attributes
+// Handle attributes
 setAttributes(element, {
-  'data-value': '123',
-  'aria-label': 'Description',
-  'disabled': undefined // removes attribute
+  'aria-label': 'Close dialog',
+  'data-status': 'ready',
+  'disabled': undefined  // remove attribute
 });
 
-// Set text content
-setText(element, 'Hello World');
-
-// Set HTML content (with optional sanitization)
-setHTML(element, '<span>Content</span>', {
-  sanitize: html => sanitizeHtml(html)
+// Update content safely
+setText(element, 'Hello World!');  // escapes HTML
+setHTML(element, '<strong>Important</strong>', {
+  sanitize: html => DOMPurify.sanitize(html)
 });
 ```
 
 ## API Reference
 
-### Wait Utilities
+### Wait Functions
 
 #### `waitFor(target, options?)`
-Wait for an element matching the target to appear in the DOM.
+```typescript
+function waitFor(
+  target: string | Element | ((el: Element) => boolean),
+  options?: {
+    root?: Element | Document;     // Root element to observe
+    timeout?: number;              // Timeout in milliseconds
+    signal?: AbortSignal;         // For cancellation
+    subtree?: boolean;            // Search in descendants
+  }
+): Promise<Element>
+```
 
 #### `waitForRemoved(target, options?)`
-Wait for an element matching the target to be removed from the DOM.
+```typescript
+function waitForRemoved(
+  target: string | Element | ((el: Element) => boolean),
+  options?: {
+    root?: Element | Document;
+    timeout?: number;
+    signal?: AbortSignal;
+    subtree?: boolean;
+  }
+): Promise<void>
+```
 
 #### `waitForChange(target, predicate, options?)`
-Wait for a change matching the predicate on the target element.
-
-Common Options:
 ```typescript
-{
-  root?: Node;           // Observation root, default: document
-  timeout?: number;      // ms, reject if exceeded
-  signal?: AbortSignal;  // Cancelable
-  subtree?: boolean;     // Observe descendants
-}
+function waitForChange(
+  target: string | Element | ((el: Element) => boolean),
+  predicate: (records: MutationRecord[]) => boolean,
+  options?: {
+    root?: Element | Document;
+    timeout?: number;
+    signal?: AbortSignal;
+    subtree?: boolean;
+  }
+): Promise<MutationRecord[]>
 ```
 
-### Observer Utilities
-
-#### `watchAdded(target, onAdd, options?)`
-Observe added elements matching the target.
-
-#### `watchRemoved(target, onRemove, options?)`
-Observe removed elements matching the target.
-
-#### `watchModified(target, onChange, options?)`
-Observe changes to elements matching the target.
+### Observer Functions
 
 #### `watchSelector(target, handlers, options?)`
-Combined observer for element entry, exit, and modification.
-
-Common Options:
 ```typescript
-{
-  root?: Node;
-  subtree?: boolean;        // default: true
-  attributes?: true | string[];
-  characterData?: boolean;
-  childList?: boolean;      // default: true
-  debounce?: number;
-  throttle?: number;
-  once?: boolean;
-  signal?: AbortSignal;
-}
+function watchSelector(
+  target: string | Element | ((el: Element) => boolean),
+  handlers: {
+    onEnter?: (el: Element) => void;
+    onExit?: (el: Element) => void;
+    onChange?: (el: Element, change: {
+      attrs?: Set<string>;
+      text?: boolean;
+      childList?: boolean;
+      records: MutationRecord[];
+    }) => void;
+  },
+  options?: {
+    root?: Element | Document;
+    subtree?: boolean;
+    attributes?: boolean | string[];
+    characterData?: boolean;
+    childList?: boolean;
+    debounce?: number;
+    throttle?: number;
+    once?: boolean;
+    signal?: AbortSignal;
+  }
+): () => void
 ```
 
-### Element Utilities
+### Element Functions
 
-#### `setClasses(element, { add?, remove? })`
-Add and/or remove CSS classes.
+#### `setClasses(element, options)`
+```typescript
+function setClasses(
+  element: Element,
+  options: {
+    add?: string[];
+    remove?: string[];
+  }
+): void
+```
 
 #### `setAttributes(element, attributes)`
-Set or remove attributes.
+```typescript
+function setAttributes(
+  element: Element,
+  attributes: Record<string, string | undefined>
+): void
+```
 
 #### `setText(element, text)`
-Set text content.
+```typescript
+function setText(
+  element: Element,
+  text: string
+): void
+```
 
 #### `setHTML(element, html, options?)`
-Set HTML content with optional sanitization.
+```typescript
+function setHTML(
+  element: Element,
+  html: string,
+  options?: {
+    sanitize?: (html: string) => string;
+  }
+): void
+```
+
+## Contributing
+
+Contributions are always welcome! Feel free to open issues or submit pull requests.
 
 ## License
 
-MIT
+This project is licensed under the MIT License.

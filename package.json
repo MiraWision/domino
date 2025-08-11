@@ -7,28 +7,54 @@
     "chrome-extension",
     "content-script",
     "mutation-observer",
-    "dom-utils"
+    "dom-utils",
+    "typescript",
+    "dom-manipulation",
+    "element-selection",
+    "wait-for-element"
   ],
   "author": "Yelysei Lukin <yelysei277@gmail.com>",
   "license": "MIT",
-
-
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MiraWision/domino.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MiraWision/domino/issues"
+  },
+  "homepage": "https://mirawision.github.io/domino",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./element": {
+      "types": "./element.d.ts",
+      "default": "./element.js"
+    },
+    "./observer": {
+      "types": "./observer.d.ts",
+      "default": "./observer.js"
+    },
+    "./wait": {
+      "types": "./wait.d.ts",
+      "default": "./wait.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "start": "npm run build && node index.js",
+    "test": "jest",
+    "pack": "npm pack",
+    "prepublish": "npm run build",
+    "publish": "npm publish --access public"
   },
-  
   "devDependencies": {
     "@types/jest": "29.5.12",
-    "@typescript-eslint/eslint-plugin": "7.1.0",
-    "@typescript-eslint/parser": "7.1.0",
-    "eslint": "8.57.0",
     "jest": "29.7.0",
     "jest-environment-jsdom": "29.7.0",
-    "rimraf": "5.0.5",
     "ts-jest": "29.1.2",
     "typescript": "5.3.3"
   }
