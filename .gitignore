@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+/mirawision-domino-*.tgz
+/utils
+/index.d.ts
+/index.js
